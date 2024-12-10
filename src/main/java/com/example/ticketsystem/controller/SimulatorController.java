@@ -3,6 +3,7 @@ package com.example.ticketsystem.controller;
 
 import com.example.ticketsystem.model.Logs;
 import com.example.ticketsystem.service.LogService;
+import com.example.ticketsystem.service.SimulationExternalService;
 import com.example.ticketsystem.service.SimulationService;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,11 +20,13 @@ public class SimulatorController {
     private SimulationService simulationService;
     @Autowired
     private LogService logService;
+    @Autowired
+    private SimulationExternalService simulationExternalService;
 
 
     @PostMapping("/start")
     public String simulatorStart() {
-        simulationService.simulateTickets();
+        simulationExternalService.simulateTickets();
         return "Simulating ticket additions...";
     }
 

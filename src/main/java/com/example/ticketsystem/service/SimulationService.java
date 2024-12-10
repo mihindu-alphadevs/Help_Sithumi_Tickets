@@ -28,56 +28,34 @@ public class SimulationService {
     public SimulationService() {
     }
 
-    public void simulateTickets() {
-        LOGGER.info("Ticket handling operations started.");
-        //Always accessing the 1st Config Entry
-        Optional<Configuration> optionalConfig = configurationService.getConfigurations(1L);
-        if(optionalConfig.isEmpty()){
-            LOGGER.error("No Configuration found");
-            return;
-        }
-        Configuration configuration = optionalConfig.get();
-        // Set the configuration dynamically
-        ticketPool.setMaximumTicketCapacity(configuration.getMaxTicketCapacity());
-        ticketPool.setInitialTickets(new ArrayList<>(configuration.getTotalTickets())); // Set initial tickets
-        // Start Vendors
-        int startingTicketNumber = configuration.getTotalTickets() + 1;
-        for (int i = 1; i <= configuration.getNumberOfVendors(); i++) {
-//            VendorService vendor = new VendorService();
-//            vendor.setVendorId(i);
-//            vendor.setTicketNumber(startingTicketNumber);
-//            vendor.setTicketReleaseRate(configuration.getTicketReleaseRate());
-//            vendor.setStopFlag(stopFlag);
-//
-//            Thread vendorThread = new Thread(vendor, "Vendor-" + i);
-//            threads.add(vendorThread);
-//            vendorThread.start();
-//            startingTicketNumber += configuration.getMaxTicketCapacity(); // Ensure unique ticket numbers
-            startTicketGeneration(startingTicketNumber,configuration.getTicketReleaseRate(),stopFlag,i);
-
-        }
-
-        // Start Customers
-        for (int i = 1; i <= configuration.getNumberOfCustomers(); i++) {
-            CustomerService customer = new CustomerService();
-            customer.setCustomerId(i);
-            customer.setCustomerRetrievalRate(configuration.getCustomerRetrievalRate());
-            customer.setStopFlag(stopFlag);
-
-            Thread customerThread = new Thread(customer, "Customer-" + i);
-            threads.add(customerThread);
-            customerThread.start();
-        }
-    }
 
     public void startTicketGeneration(int initialTicketNumber, int ticketReleaseRate, AtomicBoolean stopFlag, int vendorId) {
         generateTickets(initialTicketNumber, ticketReleaseRate, stopFlag, vendorId);
     }
 
-    @Async
+    public void startTicketPurchasing(int customerID, int ticketReleaseRate, AtomicBoolean stopFlag) {
+        buyTickets(customerID, ticketReleaseRate, stopFlag);
+    }
+
+    @Async("taskAddExecutor")
     public void generateTickets(int ticketNumber, int ticketReleaseRate, AtomicBoolean stopFlag, int vendorId) {
+        LOGGER.info("== Add Ticket for {} == ",vendorId);
         while (!stopFlag.get()) {
             ticketPoolService.addTicket(ticketNumber++, vendorId);
+            try {
+                Thread.sleep(ticketReleaseRate);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt(); // Restore the interrupt status
+                throw new RuntimeException("Thread was interrupted", e);
+            }
+        }
+    }
+
+    @Async("taskPurchaseExecutor")
+    public void buyTickets(int customerID, int ticketReleaseRate, AtomicBoolean stopFlag) {
+        LOGGER.info("== Purchase Ticket for {} == ",customerID);
+        while (!stopFlag.get()) {
+            ticketPoolService.buyTicket(customerID);
             try {
                 Thread.sleep(ticketReleaseRate);
             } catch (InterruptedException e) {
