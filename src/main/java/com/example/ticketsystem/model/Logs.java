@@ -19,6 +19,11 @@ public class Logs {
     private LocalDateTime timestamp;
     private String log;
 
+    public Logs(LocalDateTime timestamp, String log) {
+        this.timestamp = timestamp;
+        this.log = log;
+    }
+
     public LocalDateTime getTimestamp() {
         return timestamp;
     }
