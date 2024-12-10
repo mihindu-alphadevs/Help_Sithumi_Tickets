@@ -58,15 +58,8 @@ public class SimulationService {
         }
 
         // Start Customers
-        for (int i = 1; i <= configuration.getNumberOfCustomers(); i++) {
-            CustomerService customer = new CustomerService();
-            customer.setCustomerId(i);
-            customer.setCustomerRetrievalRate(configuration.getCustomerRetrievalRate());
-            customer.setStopFlag(stopFlag);
-
-            Thread customerThread = new Thread(customer, "Customer-" + i);
-            threads.add(customerThread);
-            customerThread.start();
+        for (int j = 1; j <= configuration.getNumberOfCustomers(); j++) {
+            removeTicket(configuration.getCustomerRetrievalRate(), stopFlag, j);
         }
     }
 
@@ -87,6 +80,24 @@ public class SimulationService {
         }
     }
 
+    public void removeTicket(int customerRetrievalRate, AtomicBoolean stopFlag, int customerId) {
+        removeTickets(customerRetrievalRate, stopFlag, customerId);
+    }
+
+
+
+    @Async
+    public void removeTickets(int customerRetrievalRate, AtomicBoolean stopFlag, int customerId) {
+        while (!stopFlag.get()) {
+            ticketPoolService.buyTicket(customerId);
+            try {
+                Thread.sleep(customerRetrievalRate);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
     public void stopSimulateTickets() {
         stopFlag.set(true);
         threads.forEach(t -> {
@@ -99,3 +110,4 @@ public class SimulationService {
         LOGGER.info("All ticket handling operations stopped.");
     }
 }
+
